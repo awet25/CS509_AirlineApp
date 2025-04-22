@@ -24,11 +24,26 @@ namespace AppBackend.Repositories
                 BookingTime=DateTime.UtcNow,
                 IsPaid=false,
                 Price=bookingInfoDto.Price,
+                Gender=bookingInfoDto.Gender,
+                DateOfBirth=bookingInfoDto.DateOfBirth,
             };
          var bookingInfo = _context.TicketBookings.Add(booking);
          await _context.SaveChangesAsync();
          return bookingInfo.Entity;
 
+        }
+
+        public  async Task ExpireUnpaidBookingsAsync()
+        {
+             var cutoff=DateTime.UtcNow.AddMinutes(-15);
+         var expired=await _context.TicketBookings.
+         Include(b=>b.Flights).Where(b=>!b.IsPaid && b.BookingTime<cutoff).ToListAsync();
+         if(expired.Any())
+         {
+            _context.TicketBookingFlights.RemoveRange(expired.SelectMany(b=>b.Flights));
+            _context.TicketBookings.RemoveRange(expired);
+            await _context.SaveChangesAsync(); 
+        }
         }
 
         public async Task<TicketBooking> GetBookingBySessionIdAsync(Guid sessionId)

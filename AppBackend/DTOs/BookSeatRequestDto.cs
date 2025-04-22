@@ -11,6 +11,7 @@ namespace AppBackend.DTOs
     public string? Flight2Source { get; set; }
     public string SeatNumber { get; set; }
     public Guid SessionId   {get; set; } 
+    public string Direction { get; set; }
 
    }   
 public class AvailableSeatDto
