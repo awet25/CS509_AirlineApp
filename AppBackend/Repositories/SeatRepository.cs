@@ -20,6 +20,7 @@ namespace AppBackend.Repositories
               var isTaken = await _context.BookedSeats.AnyAsync(s =>
             s.SeatNumber == dto.SeatNumber &&
             s.FlightType == dto.FlightType &&
+            s.Direction == dto.Direction &&
             ((dto.FlightType == FlightTypes.Direct &&
               s.FlightId == dto.FlightId && s.FlightSource == dto.FlightSource) ||
              (dto.FlightType == FlightTypes.Connecting &&
@@ -42,7 +43,9 @@ namespace AppBackend.Repositories
                 IsConfirmed = false,
                 HoldExpiresAt = expiration,
                 SessionId = dto.SessionId,
-               
+                Direction=dto.Direction,
+
+                
             });
         }
         else if (dto.FlightType == FlightTypes.Connecting && dto.Flight1Id.HasValue && dto.Flight2Id.HasValue
@@ -59,7 +62,8 @@ namespace AppBackend.Repositories
                     IsConfirmed = false,
                     HoldExpiresAt = expiration,
                     SessionId = dto.SessionId,
-                    Leg = 1
+                    Leg = 1,
+                    Direction=dto.Direction,
                 },
                 new BookedSeat
                 {
@@ -70,7 +74,8 @@ namespace AppBackend.Repositories
                     IsConfirmed = false,
                     HoldExpiresAt = expiration,
                     SessionId = dto.SessionId,
-                    Leg = 2
+                    Leg = 2,
+                    Direction=dto.Direction,
                 }
             });
         }
@@ -92,10 +97,11 @@ namespace AppBackend.Repositories
             }
         }
 
-        public async Task<List<string>> GetAvailableSeatsForConnectedFlightAsync(int flight1Id, int flight2Id,string source1,string source2)
+        public async Task<List<string>> GetAvailableSeatsForConnectedFlightAsync(int flight1Id, int flight2Id,string source1,string source2,string direction)
         {   
              var heldSeats = await _context.BookedSeats
             .Where(s => s.FlightType == FlightTypes.Connecting &&
+                          s.Direction == direction &&
                         ((s.FlightId == flight1Id && s.FlightSource == source1) ||
                          (s.FlightId == flight2Id && s.FlightSource == source2)) &&
                         (s.IsConfirmed || s.HoldExpiresAt > DateTime.UtcNow))
@@ -106,13 +112,14 @@ namespace AppBackend.Repositories
         
         }
 
-        public async Task<List<string>> GetAvailableSeatsForDirectFlightAsync(int flightId,string source)
+        public async Task<List<string>> GetAvailableSeatsForDirectFlightAsync(int flightId,string source,string direction)
         {
                                              
            var heldSeats = await _context.BookedSeats
             .Where(s => s.FlightType == FlightTypes.Direct &&
                         s.FlightId == flightId &&
                         s.FlightSource == source &&
+                        s.Direction==direction &&
                         (s.IsConfirmed || s.HoldExpiresAt > DateTime.UtcNow))
             .Select(s => s.SeatNumber)
             .ToListAsync();

@@ -25,17 +25,17 @@ public class BookingController: ControllerBase
     }
 
     [HttpGet("availableseat/direct/{flightId}")]
-    public async Task<ActionResult<List<AvailableSeatDto>>> GetDirectSeats(int flightId, [FromQuery] string source)
-    {
-        var seat= await _seatRepository.GetAvailableSeatsForDirectFlightAsync(flightId, source);
+    public async Task<ActionResult<List<AvailableSeatDto>>> GetDirectSeats(  int flightId, [FromQuery] string source,[FromQuery] string direction)
+    {   
+        var seat= await _seatRepository.GetAvailableSeatsForDirectFlightAsync(flightId, source,direction);
         var seatDto=seat.Select(s => new AvailableSeatDto {SeatNumber=s} ).ToList();
         return Ok(seatDto);
     }
 
     [HttpGet("availableseat/connecting")]
-    public async Task <ActionResult<List<AvailableSeatDto>>> GetConnectingSeats([FromQuery]int flight1Id, [FromQuery] int flight2Id,[FromQuery] string source1, [FromQuery] string source2)
+    public async Task <ActionResult<List<AvailableSeatDto>>> GetConnectingSeats([FromQuery]int flight1Id, [FromQuery] int flight2Id,[FromQuery] string source1, [FromQuery] string source2,[FromQuery] string direct)
     {
-        var seats=await _seatRepository.GetAvailableSeatsForConnectedFlightAsync(flight1Id, flight2Id,source1,source2);
+        var seats=await _seatRepository.GetAvailableSeatsForConnectedFlightAsync(flight1Id, flight2Id,source1,source2,direct);
         var seatDto=seats.Select(s=> new AvailableSeatDto {SeatNumber=s}).ToList();
         return Ok(seatDto);
     }
@@ -63,7 +63,7 @@ public class BookingController: ControllerBase
 
      [HttpPost("confirm_after-payment")]
     public async Task<IActionResult> ConfirmAfterPayment([FromBody] ConfirmBookingRequestDto request ){
-        var booking= await _context.TicketBookings.FirstOrDefaultAsync(b=>b.SessionId==request.SessionId);
+        var booking= await _context.TicketBookings.Include(b=>b.Flights).FirstOrDefaultAsync(b=>b.SessionId==request.SessionId);
         if (booking==null)  
         {
             return NotFound("Booking not found");
