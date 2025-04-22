@@ -23,3 +23,15 @@ if (-Not (Test-Path "./tools/cake/Cake.dll")) {
 # Run Cake script
 Write-Host "Running build.cake..." -ForegroundColor Cyan
 ./tools/cake/dotnet-cake build.cake
+
+# Run AppBackend
+Write-Host "Starting AppBackend..." -ForegroundColor Green
+Push-Location "./AppBackend"
+dotnet run
+Pop-Location
+
+# Run AppFrontend
+Write-Host "Starting AppFrontend..." -ForegroundColor Green
+Push-Location "./AppFrontend"
+npm run dev
+Pop-Location
