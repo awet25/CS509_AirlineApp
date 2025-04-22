@@ -8,6 +8,7 @@ namespace AppBackend.Interfaces
 Task <TicketBooking> AddBookingInfoAsync(BookingInfoDto bookingInfoDto);
 Task <TicketBooking>GetBookingBySessionIdAsync(Guid sessionId);
 Task UpdateBookingAsync(TicketBooking booking);
+Task ExpireUnpaidBookingsAsync();
 
  }
 

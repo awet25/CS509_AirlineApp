@@ -26,10 +26,12 @@ public class WebhookController : ControllerBase
     public async Task<IActionResult> Handle()
     {
         var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        var secret = _configuration["Stripe:WebhookSecret"]; // set this from your Stripe dashboard
+        var secret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET"); // set this from your Stripe dashboard
+        
 
         try
-        {
+       {    _logger.LogWarning("Received Signature Header: {sig}", Request.Headers["Stripe-Signature"]);
+            _logger.LogWarning("Webhook Secret from config: {secret}", secret ?? "NULL");
             var stripeEvent = EventUtility.ConstructEvent(json,
                 Request.Headers["Stripe-Signature"], secret);
 
