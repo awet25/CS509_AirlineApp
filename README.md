@@ -26,3 +26,7 @@ Set the following Environmetal variables
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 DefaultConnection=server=localhost;port=3306;user=root;password=yourpass;database=yourdbname;
+
+### To test stripe locally you have to run the following command in a new cli:
+stripe listen --forward-to localhost:5218/api/v1/webhook
+
