@@ -30,3 +30,4 @@ AppBackend.Tests/obj/
 *.njsproj
 *.sln
 *.sw?
+AppBackend/.env

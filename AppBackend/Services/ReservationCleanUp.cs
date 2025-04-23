@@ -3,12 +3,12 @@ using AppBackend.Interfaces;
 
 namespace AppBackend.Services
 {
-    public class SeatHoldCleanupSerivce : BackgroundService
+    public class ReservationCleanUp : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger <SeatHoldCleanupSerivce> _logger ;
+        private readonly ILogger <ReservationCleanUp > _logger ;
 
-        public SeatHoldCleanupSerivce(IServiceProvider serviceProvider,ILogger <SeatHoldCleanupSerivce> logger){
+        public ReservationCleanUp (IServiceProvider serviceProvider,ILogger <ReservationCleanUp > logger){
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -20,21 +20,27 @@ namespace AppBackend.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var seatRepo = scope.ServiceProvider.GetRequiredService<ISeatRepository>();
+            var ticketRepo=scope.ServiceProvider.GetRequiredService<ITicketBookingRepository>();
 
             try
             {
                 await seatRepo.ExprireStaleSeatHoldsAsync();
-                _logger.LogInformation("[SeatHoldCleanup] Expired stale seat holds at {time}", DateTime.UtcNow);
+                _logger.LogInformation("[ReservationCleanUp] Expired stale seat holds at {time}", DateTime.UtcNow);
+                await ticketRepo.ExpireUnpaidBookingsAsync();
+                _logger.LogInformation("[ReservationCleanUp] Cleaned up unpaid bookings at {time}", DateTime.UtcNow);
+
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[SeatHoldCleanup] Error while expiring stale seat holds");
+                _logger.LogError(ex, "[ReservationCleanUp] Error while expiring stale seat holds");
             }
 
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // run every 5 minutes
         }
 
         }
+
+     
     }
 
 }
