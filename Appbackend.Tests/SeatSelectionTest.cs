@@ -1,7 +1,9 @@
+namespace Appbackend.Tests;
 using System.Net;
 using System.Net.Http.Json;
 using AppBackend.DTOs;
 using AppBackend.Models;
+using AppBackend.Tests;
 using FluentAssertions;
 using Xunit;
 
