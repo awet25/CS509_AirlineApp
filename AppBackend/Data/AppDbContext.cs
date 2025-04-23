@@ -59,6 +59,12 @@ namespace AppBackend.Data
         }
         
         );
+         modelBuilder.Entity<BookedSeat>()
+    .HasIndex(b => new { b.FlightId, b.FlightSource, b.SeatNumber, b.Direction, b.FlightType, b.IsConfirmed })
+    .IsUnique();
+
+
+
         
     }
     

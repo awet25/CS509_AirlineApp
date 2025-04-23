@@ -6,9 +6,10 @@ using AppBackend.Interfaces;
 using AppBackend.Repositories;
 using AppBackend.Services;
 using Stripe;
+using DotNetEnv;
 
 
-
+Env.Load();
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -33,9 +34,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options=>
 options.UseMySql(connectionString,
 new MySqlServerVersion(new Version(8,0,41))
-));
+).EnableSensitiveDataLogging(true).LogTo(Console.WriteLine, 
+LogLevel.Information).EnableDetailedErrors(true));
 
 //ADD Strip
+var webhookSecret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET");
 var stripeApiKey=Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
 if (string.IsNullOrEmpty(stripeApiKey))
     throw new InvalidOperationException("STRIPE_SECRET_KEY is not set. Please configure your environment.");
@@ -45,7 +48,9 @@ StripeConfiguration.ApiKey=stripeApiKey;
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options=>{
+    options.JsonSerializerOptions.ReferenceHandler=System.Text.Json.Serialization.ReferenceHandler.Preserve;
+});
 builder.Services.AddScoped<IFlightRepository,FlightRepository>();
 builder.Services.AddScoped<ICitiesRepository,CityRepository>();
 builder.Services.AddScoped<IPricecalculate,PriceCalculate>();
@@ -55,7 +60,7 @@ builder.Services.AddScoped<ITicketBookingRepository,TicketBookingRepository>();
 builder.Services.AddScoped<ITicketBookingFlightRepository, TicketBookingFlightRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
-builder.Services.AddHostedService<SeatHoldCleanupSerivce>();
+builder.Services.AddHostedService<ReservationCleanUp>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

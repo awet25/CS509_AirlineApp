@@ -13,3 +13,20 @@ In terminal 2 'cd AppFrontend' and use 'npm run dev' to start frontend server
 
 
 Please add Environment variable in your your system that is called "DefaultConnection" that has the connecting string to your database.
+
+### Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
+- [MySQL Server](https://dev.mysql.com/downloads/mysql/)
+- [Stripe CLI](https://stripe.com/docs/stripe-cli) for webhook testing
+- [Node.js & npm](https://nodejs.org/) (if using frontend)
+
+### 🔧 Setup Instructions
+Set the following Environmetal variables
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+DefaultConnection=server=localhost;port=3306;user=root;password=yourpass;database=yourdbname;
+
+### To test stripe locally you have to run the following command in a new cli:
+stripe listen --forward-to localhost:5218/api/v1/webhook
+
