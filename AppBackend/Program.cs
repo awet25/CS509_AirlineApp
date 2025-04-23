@@ -34,7 +34,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options=>
 options.UseMySql(connectionString,
 new MySqlServerVersion(new Version(8,0,41))
-));
+).EnableSensitiveDataLogging(true).LogTo(Console.WriteLine, 
+LogLevel.Information).EnableDetailedErrors(true));
 
 //ADD Strip
 var webhookSecret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET");
