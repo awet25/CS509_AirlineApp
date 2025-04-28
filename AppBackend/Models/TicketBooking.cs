@@ -1,7 +1,10 @@
 
-
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 namespace AppBackend.Models
-{
+{  
+  [Index(nameof(ConfirmationCode),IsUnique =true)]
+  [Index(nameof(BookingReference),IsUnique =true)]
   public class TicketBooking
   {
     public int Id { get; set; }
@@ -13,11 +16,14 @@ namespace AppBackend.Models
     public DateTime BookingTime { get; set; }=DateTime.UtcNow;
     public bool IsPaid  { get; set; }=false;
     public  double Price { get; set; }
+    public string? BookingReference { get; set; }
     public DateTime DateOfBirth { get; set; }
     public string Gender { get; set; }
+    public string? ConfirmationCode { get; set; }
    
 
 
     public ICollection<TicketBookingFlight> Flights { get; set; } 
+    public ICollection<BookedSeat>BookedSeats {get;set;}
   }   
 }

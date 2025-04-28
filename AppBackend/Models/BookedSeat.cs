@@ -1,5 +1,5 @@
 using AppBackend.DTOs;
-
+using System.ComponentModel.DataAnnotations.Schema;
 namespace AppBackend.Models
 {
     public class BookedSeat
@@ -14,6 +14,11 @@ namespace AppBackend.Models
         public DateTime HoldExpiresAt { get; set;}
         public string Direction { get; set; } // "outbound" or "return"
         public Guid SessionId { get; set; }
+        
+        public int? TicketBookingId{get;set;}
+        
+        [ForeignKey(nameof(TicketBookingId))]
+        public TicketBooking TicketBooking {get;set;}
 
         
     }

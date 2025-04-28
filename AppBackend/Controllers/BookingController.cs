@@ -33,17 +33,25 @@ public class BookingController: ControllerBase
     }
 
     [HttpGet("availableseat/connecting")]
-    public async Task <ActionResult<List<AvailableSeatDto>>> GetConnectingSeats([FromQuery]int flight1Id, [FromQuery] int flight2Id,[FromQuery] string source1, [FromQuery] string source2,[FromQuery] string direct)
+    public async Task <ActionResult<List<AvailableSeatDto>>> GetConnectingSeats([FromQuery]int flight1Id, [FromQuery] int flight2Id,[FromQuery] string source1, [FromQuery] string source2,[FromQuery] string direction)
     {
-        var seats=await _seatRepository.GetAvailableSeatsForConnectedFlightAsync(flight1Id, flight2Id,source1,source2,direct);
-        var seatDto=seats.Select(s=> new AvailableSeatDto {SeatNumber=s}).ToList();
-        return Ok(seatDto);
+        var seats=await _seatRepository.GetAvailableSeatsForConnectedFlightAsync(flight1Id, flight2Id,source1,source2,direction);
+        return Ok(seats);
     }
 
-    [HttpPost("selectseat")]
-    public async Task<IActionResult> BookSeat([FromBody] BookeSeatRequestDto dto)
+    [HttpPost("selectseat/direct")]
+    public async Task<IActionResult> BookDirectSeat([FromBody] BookingDirectSeatsDto dto)
     {
-        var isHeld = await _seatRepository.HoldSeatAsync(dto);
+        var isHeld = await _seatRepository.HoldSeatForDirectFlightAsync(dto);
+        if (!isHeld)
+            return BadRequest("Seat already booked or invalid request.");
+
+        return Ok("Seat booked successfully.");
+    }
+       [HttpPost("selectseat/connecting")]
+    public async Task<IActionResult> BookConnectingSeat([FromBody] BookingConnectingSeatsDto dto)
+    {
+        var isHeld = await _seatRepository.HoldSeatForConnectingFlightAsync(dto);
         if (!isHeld)
             return BadRequest("Seat already booked or invalid request.");
 
@@ -56,28 +64,12 @@ public class BookingController: ControllerBase
     {
         var ticketInfo=await _TicketRepository.AddBookingInfoAsync(dto);
         var ticketbookingflight=await _ticketBookingFlightRepository.AddTicketBookingFlightAsync(dto,ticketInfo.Id);
-        return Ok( new {message ="booking info saved. Process to payment"});
+        return Ok( new {message ="booking info saved. Process to payment",BookingReference=ticketInfo.BookingReference});
 
 
     }
 
-     [HttpPost("confirm_after-payment")]
-    public async Task<IActionResult> ConfirmAfterPayment([FromBody] ConfirmBookingRequestDto request ){
-        var booking= await _context.TicketBookings.Include(b=>b.Flights).FirstOrDefaultAsync(b=>b.SessionId==request.SessionId);
-        if (booking==null)  
-        {
-            return NotFound("Booking not found");
-            
-        }
-        var confirm=await _seatRepository.ConfirmseatsAsync(request.SessionId);
-        if(!confirm){
-            return BadRequest("Seats were expired or not held.");
-
-        }
-        booking.IsPaid=true;
-        await _context.SaveChangesAsync();
-        return Ok(new { message= "Booking Confirmed and paid",booking});
-    }
+     
     
   
 }

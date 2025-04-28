@@ -1,4 +1,4 @@
-import City from './components/City';
+
 import FlightSearch from './components/FlightSearch';
 
 function App() {

@@ -3,18 +3,28 @@ using AppBackend.Data;
 using AppBackend.DTOs;
 using AppBackend.Interfaces;
 using AppBackend.Models;
+using AppBackend.util;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
+using Stripe.Checkout;
 
 namespace AppBackend.Repositories
 {
     public class TicketBookingRepository : ITicketBookingRepository
     {  
         private readonly AppDbContext _context;
+        private readonly ISeatRepository _seatRepository;
+        private readonly IBookingService _bookingService;
         private readonly ILogger<TicketBookingRepository> _logger;
-        public TicketBookingRepository(AppDbContext context, ILogger<TicketBookingRepository> logger)
+        public TicketBookingRepository(AppDbContext context, ILogger<TicketBookingRepository> logger,
+        
+        ISeatRepository seatRepository, IBookingService bookingService
+        )
         {
             _context = context;
             _logger = logger;
+            _bookingService=bookingService;
+            _bookingService=bookingService;
         }
        
         public async Task<TicketBooking> AddBookingInfoAsync(BookingInfoDto bookingInfoDto)
@@ -30,12 +40,15 @@ namespace AppBackend.Repositories
                 Price=bookingInfoDto.Price,
                 Gender=bookingInfoDto.Gender,
                 DateOfBirth=bookingInfoDto.DateOfBirth,
+                BookingReference=$"BR-{Guid.NewGuid().ToString().Substring(0,8).ToUpper()}"
             };
          var bookingInfo = _context.TicketBookings.Add(booking);
          await _context.SaveChangesAsync();
          return bookingInfo.Entity;
 
         }
+
+       
 
         public  async Task ExpireUnpaidBookingsAsync()
         {
@@ -50,6 +63,12 @@ namespace AppBackend.Repositories
         }
         }
 
+        public async Task<TicketBooking> GetBookingBySessionAndReferenceAsync(Guid SessionId, string Bookingreference)
+        {
+            return await _context.TicketBookings
+            .FirstOrDefaultAsync(T=>T.SessionId==SessionId  && T.BookingReference==Bookingreference);
+        }
+
         public async Task<TicketBooking?> GetBookingBySessionIdAsync(Guid sessionId)
         {
             return  await _context.TicketBookings.Include(b=>b.Flights)
@@ -62,6 +81,17 @@ namespace AppBackend.Repositories
         bs.FlightId == flightId &&
         bs.SeatNumber == seatNumber &&
         (bs.IsConfirmed || bs.HoldExpiresAt > DateTime.UtcNow));
+        }
+
+        public async Task<bool> MarkBookingAsPaidAsync(Guid sessionId, string bookingReference)
+        {
+             var booking = await GetBookingBySessionAndReferenceAsync(sessionId, bookingReference);
+            if (booking == null) return false;
+
+           booking.IsPaid = true;
+           booking.ConfirmationCode = ConfirmationNumberGenerator.Generate();
+           await _context.SaveChangesAsync();
+           return true;
         }
 
         public async Task UpdateBookingAsync(TicketBooking booking)

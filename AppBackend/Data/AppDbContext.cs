@@ -60,10 +60,14 @@ namespace AppBackend.Data
         
         );
          modelBuilder.Entity<BookedSeat>()
-    .HasIndex(b => new { b.FlightId, b.FlightSource, b.SeatNumber, b.Direction, b.FlightType, b.IsConfirmed })
-    .IsUnique();
-
-
+         .HasIndex(b => new { b.FlightId, b.FlightSource, b.SeatNumber, b.Direction, b.FlightType, b.IsConfirmed })
+         .IsUnique();
+  
+         modelBuilder.Entity<TicketBooking>()
+         .HasMany(tb=> tb.Flights)
+         .WithOne(tb=>tb.TicketBooking)
+         .HasForeignKey(tb=>tb.TicketBookingId)
+         .OnDelete(DeleteBehavior.Cascade);
 
         
     }
