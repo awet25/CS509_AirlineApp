@@ -7,6 +7,7 @@ using AppBackend.Repositories;
 using AppBackend.Services;
 using Stripe;
 using DotNetEnv;
+using AppBackend.DTOs;
 
 
 Env.Load();
@@ -46,11 +47,21 @@ StripeConfiguration.ApiKey=stripeApiKey;
 
 
 
+
+
 // Add services to the container.
 
 builder.Services.AddControllers().AddJsonOptions(options=>{
     options.JsonSerializerOptions.ReferenceHandler=System.Text.Json.Serialization.ReferenceHandler.Preserve;
 });
+builder.Services.Configure<SendGridSettings>(options=>{
+       options.ApiKey=Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+       options.SenderEmail = "flightapp45@gmail.com";
+       options.SenderName = "Flight App";
+
+});
+ builder.Services.AddTransient<IEMailService,SendGridEmailService>();
+
 builder.Services.AddScoped<IFlightRepository,FlightRepository>();
 builder.Services.AddScoped<ICitiesRepository,CityRepository>();
 builder.Services.AddScoped<IPricecalculate,PriceCalculate>();
@@ -58,6 +69,7 @@ builder.Services.AddScoped<ISeatRepository,SeatRepository>();
 builder.Services.AddScoped<IPaymentService,PaymentService>();
 builder.Services.AddScoped<ITicketBookingRepository,TicketBookingRepository>();
 builder.Services.AddScoped<ITicketBookingFlightRepository, TicketBookingFlightRepository>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
 builder.Services.AddHostedService<ReservationCleanUp>();
@@ -69,11 +81,11 @@ var app = builder.Build();
 app.UseCors(MyAllowSpecificOrigins);
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 app.UseHttpsRedirection();
 

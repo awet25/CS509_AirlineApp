@@ -4,6 +4,7 @@ using AppBackend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AppBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250424044823_AddTicketBookingRelationshipToBookedSeats")]
+    partial class AddTicketBookingRelationshipToBookedSeats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -282,13 +285,11 @@ namespace AppBackend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BookingReference")
-                        .HasColumnType("varchar(255)");
-
                     b.Property<DateTime>("BookingTime")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("ConfirmationCode")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("DateOfBirth")
@@ -324,9 +325,6 @@ namespace AppBackend.Migrations
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BookingReference")
-                        .IsUnique();
 
                     b.HasIndex("ConfirmationCode")
                         .IsUnique();

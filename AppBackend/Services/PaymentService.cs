@@ -8,9 +8,17 @@ namespace AppBackend.Services
 
     public class PaymentService : IPaymentService
     {
-
-     public async Task<string> CreateCheckoutSessionAsync(double amount, string sessionId, string successUrl, string cancelUrl)
-    {
+       private readonly ITicketBookingRepository _bookingRepository;
+       public PaymentService(ITicketBookingRepository ticketBookingRepository){
+         _bookingRepository=ticketBookingRepository;
+       }
+     public async Task<string> CreateCheckoutSessionAsync(double amount, string sessionId, string successUrl, string cancelUrl,string BookingReference)
+    {   
+        
+        var sessionGuid=Guid.Parse(sessionId);
+        Console.WriteLine(sessionGuid.ToString(),BookingReference);
+        var booking= await _bookingRepository.GetBookingBySessionAndReferenceAsync(sessionGuid,BookingReference);
+        if (booking==null) throw new Exception("Booking not Found");
         var options = new  Checkout.SessionCreateOptions
         {
             PaymentMethodTypes = new List<string> { "card" },
@@ -35,7 +43,8 @@ namespace AppBackend.Services
             CancelUrl = cancelUrl,
             Metadata = new Dictionary<string, string>
             {
-                { "sessionId", sessionId.ToString() }
+                { "sessionId", sessionId.ToString() },
+                {"bookingReference",booking.BookingReference?? throw new InvalidOperationException("booking refrence is misssing")}
             }
         };
 
