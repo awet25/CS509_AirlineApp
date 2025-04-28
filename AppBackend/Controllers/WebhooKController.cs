@@ -14,74 +14,133 @@ namespace AppBackend.Controllers
         private readonly ILogger<WebhookController> _logger;
         private readonly IConfiguration _configuration;
         private readonly ISeatRepository _seatRepository;
+        private readonly IBookingService _bookingService;
 
         public WebhookController(
             ITicketBookingRepository ticketBookingRepository,
             ILogger<WebhookController> logger,
             IConfiguration configuration,
-            ISeatRepository seatRepository)
+            ISeatRepository seatRepository,
+            IBookingService bookingService)
         {
             _ticketBookingRepository = ticketBookingRepository;
             _logger = logger;
             _configuration = configuration;
             _seatRepository = seatRepository;
+            _bookingService=bookingService;
         }
 
+        //[HttpPost]
+        // public async Task<IActionResult> HandleStripeWebhookAsync(HttpRequest request)
+        // {   
+
+
+        //     Console.WriteLine("I got hittttt");
+        //     var json = await new StreamReader(request.Body).ReadToEndAsync();
+        //     var secret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET");
+
+        //     try
+        //     {
+        //         var stripeEvent = EventUtility.ConstructEvent(json, request.Headers["Stripe-Signature"], secret);
+
+        //         if (stripeEvent.Type == "checkout.session.completed")
+        //         {
+        //             var stripeSession = stripeEvent.Data.Object as Session;
+
+        //             if (stripeSession == null)
+        //             {
+        //                 _logger.LogError("Stripe session object is null in webhook payload.");
+        //                 return new BadRequestResult();
+        //             }
+        //             var success = await _ticketBookingRepository.ConfirmBookingFromStripeWebhookAsync(stripeSession.Id);
+        //     if (!success)
+        //     {
+        //         _logger.LogError("Failed to confirm booking from Stripe webhook session ID: {0}", stripeSession.Id);
+        //         return new BadRequestResult();
+        //     }
+
+                    
+        //         }
+
+        //         return new OkResult();
+        //     }
+        //     catch (StripeException e)
+        //     {
+        //         _logger.LogError($"Stripe webhook error: {e.Message}");
+        //         return BadRequest();
+        //     }
+        // }
+
+
         [HttpPost]
-        public async Task<IActionResult> Handle()
+    public async Task<IActionResult> Index()
+    {
+        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+
+        try
         {
-            var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            var secret = Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET");
+            var stripeSignature = Request.Headers["Stripe-Signature"];
+            var webhookSecret =Environment.GetEnvironmentVariable("STRIPE_WEBHOOK_SECRET"); 
 
-            try
+            var stripeEvent = EventUtility.ConstructEvent(
+                json,
+                stripeSignature,
+                webhookSecret
+            );
+
+            if (stripeEvent.Type == "checkout.session.completed")
             {
-                var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], secret);
-
-                if (stripeEvent.Type == "checkout.session.completed")
+                var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
+                if (session == null)
                 {
-                    var stripeSession = stripeEvent.Data.Object as Session;
+                    _logger.LogError("Stripe event cast to Session failed.");
+                    return BadRequest();
+                }
 
-                    if (stripeSession == null)
+                if (session.Metadata.TryGetValue("sessionId", out var appSessionId) &&
+                    session.Metadata.TryGetValue("bookingReference", out var bookingReference))
+                {
+                    var sessionGuid = Guid.Parse(appSessionId);
+
+                    var paid = await _ticketBookingRepository.MarkBookingAsPaidAsync(sessionGuid, bookingReference);
+                    if (!paid)
                     {
-                        _logger.LogError("Stripe session object is null in webhook payload.");
+                        _logger.LogError("Failed to mark booking as paid.");
                         return BadRequest();
                     }
 
-                    // Retrieve full session including metadata
-                    var service = new SessionService();
-                    var session = await service.GetAsync(stripeSession.Id);
+                    var booking = await _ticketBookingRepository.GetBookingBySessionAndReferenceAsync(sessionGuid, bookingReference);
 
-                    if (session.Metadata != null && session.Metadata.TryGetValue("sessionId", out var appSessionId))
+                    var success = await _seatRepository.ConfirmseatsAsync(sessionGuid, booking.Id);
+                    if (success)
                     {
-                        var sessionGuid = Guid.Parse(appSessionId);
-                        var booking = await _ticketBookingRepository.GetBookingBySessionIdAsync(sessionGuid);
-
-                        if (booking != null)
-                        {
-                            booking.IsPaid = true;
-                            await _ticketBookingRepository.UpdateBookingAsync(booking);
-
-                            var success = await _seatRepository.ConfirmseatsAsync(sessionGuid);
-                            _logger.LogInformation("Booking {bookingId} marked as paid. Seats confirmed: {confirmed}", booking.Id, success);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("No booking found for sessionId: {sessionId}", appSessionId);
-                        }
+                        await _bookingService.SendConfirmationEmailAsync(booking);
                     }
-                    else
-                    {
-                        _logger.LogError("Metadata is null or missing sessionId in Stripe session.");
-                    }
+
+                    return Ok();
                 }
-
-                return Ok();
+                else
+                {
+                    _logger.LogError("Session metadata missing sessionId or bookingReference.");
+                    return BadRequest();
+                }
             }
-            catch (StripeException e)
+            else
             {
-                _logger.LogError($"Stripe webhook error: {e.Message}");
-                return BadRequest();
+                _logger.LogInformation($"Received unexpected event type: {stripeEvent.Type}");
+                return Ok(); // Always 200 for unknown event types
             }
         }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Stripe webhook processing error.");
+            return BadRequest();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected webhook error.");
+            return StatusCode(500);
+        }
+    }
     }
 }

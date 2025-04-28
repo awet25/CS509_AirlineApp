@@ -1,11 +1,17 @@
-import React from 'react';
 
-function FlightList({ title, flights }) {
+import type { components } from '../types/api';
+type CombinedFlightDto = components['schemas']['CombinedFlightDto'];
+interface FlightListProps {
+  title: string;
+  flights: CombinedFlightDto[];
+}
+
+function FlightList({ title, flights }:FlightListProps) {
   if (!Array.isArray(flights)) {
     return <div>No flights available</div>;
   }
 
-  const handleSelectFlight = (flight) => {
+  const handleSelectFlight = (flight:CombinedFlightDto) => {
     console.log('Selected flight:', flight);
     // Add logic to handle flight selection for purchase
   };
@@ -19,8 +25,8 @@ function FlightList({ title, flights }) {
             <p>Flight Number: {flight.flightNumber}</p>
             <p>Depart Airport: {flight.departAirport}</p>
             <p>Arrive Airport: {flight.arriveAirport}</p>
-            <p>Departure Date: {new Date(flight.departDateTime).toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'numeric', day: 'numeric' })}</p>
-            <p>Arrival Date: {new Date(flight.arriveDateTime).toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'numeric', day: 'numeric' })}</p>
+            <p>Departure Date: {new Date(flight.departDateTime || "").toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'numeric', day: 'numeric' })}</p>
+            <p>Arrival Date: {new Date(flight.arriveDateTime||"").toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'numeric', day: 'numeric' })}</p>
             <div style={{ textAlign: 'center' }}>
               <button onClick={() => handleSelectFlight(flight)}>Select Flight</button>
             </div>

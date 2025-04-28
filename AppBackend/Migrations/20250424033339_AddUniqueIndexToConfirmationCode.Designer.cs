@@ -4,6 +4,7 @@ using AppBackend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AppBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250424033339_AddUniqueIndexToConfirmationCode")]
+    partial class AddUniqueIndexToConfirmationCode
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,12 +63,7 @@ namespace AppBackend.Migrations
                     b.Property<Guid>("SessionId")
                         .HasColumnType("char(36)");
 
-                    b.Property<int?>("TicketBookingId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("TicketBookingId");
 
                     b.HasIndex("FlightId", "FlightSource", "SeatNumber", "Direction", "FlightType", "IsConfirmed")
                         .IsUnique();
@@ -282,13 +280,11 @@ namespace AppBackend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BookingReference")
-                        .HasColumnType("varchar(255)");
-
                     b.Property<DateTime>("BookingTime")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("ConfirmationCode")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("DateOfBirth")
@@ -325,9 +321,6 @@ namespace AppBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookingReference")
-                        .IsUnique();
-
                     b.HasIndex("ConfirmationCode")
                         .IsUnique();
 
@@ -363,15 +356,6 @@ namespace AppBackend.Migrations
                     b.ToTable("TicketBookingFlights");
                 });
 
-            modelBuilder.Entity("AppBackend.Models.BookedSeat", b =>
-                {
-                    b.HasOne("AppBackend.Models.TicketBooking", "TicketBooking")
-                        .WithMany("BookedSeats")
-                        .HasForeignKey("TicketBookingId");
-
-                    b.Navigation("TicketBooking");
-                });
-
             modelBuilder.Entity("AppBackend.Models.TicketBookingFlight", b =>
                 {
                     b.HasOne("AppBackend.Models.TicketBooking", "TicketBooking")
@@ -385,8 +369,6 @@ namespace AppBackend.Migrations
 
             modelBuilder.Entity("AppBackend.Models.TicketBooking", b =>
                 {
-                    b.Navigation("BookedSeats");
-
                     b.Navigation("Flights");
                 });
 #pragma warning restore 612, 618
